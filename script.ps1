@@ -97,6 +97,6 @@ $coreMetadata2 = [PSCustomObject]@{
             $coreMetadata2.app_groupSubnets += $appGroupSubnet
 
             $stackMetadata.webstack_cores_by_region += $coreMetadata2
-            $stackMetadata.webstack_cores_by_region | Out-File -FilePath "output.txt"
+            # $stackMetadata.webstack_cores_by_region | Out-File -FilePath "output.txt"
 
 return $stackMetadata
