@@ -110,7 +110,7 @@ front_door = $($stackMetadata.front_door)
 webstack_cores_by_region = $($outputString)
 "@
 
-$outputString | Out-File $outputFilePath
+$outputString | Out-File -Encoding utf8 $outputFilePath
 
 # Define the name of the Terraform executable
 $terraformExecutable = "terraform"
