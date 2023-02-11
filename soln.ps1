@@ -112,4 +112,28 @@ webstack_cores_by_region = $($outputString)
 
 $outputString | Out-File $outputFilePath
 
+# Define the name of the Terraform executable
+$terraformExecutable = "terraform"
+
+# Find the absolute path of the Terraform executable
+$terraformPath = (Get-Command $terraformExecutable -ErrorAction SilentlyContinue).Path
+
+# Check if Terraform was found
+if (-not $terraformPath) {
+    Write-Output "Terraform is not installed. No action taken."
+    exit 0
+}
+
+# Run the `terraform fmt` command
+& $terraformPath fmt
+
+# Check the exit code of the previous command
+if ($LASTEXITCODE -ne 0) {
+    Write-Output "Error: Terraform fmt failed."
+    exit 1
+} else {
+    Write-Output "Success: Terraform fmt completed successfully."
+}
+
+
 return $stackMetadata
