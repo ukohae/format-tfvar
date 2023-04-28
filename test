@@ -14,7 +14,6 @@
     10.0.12.5 50% ACTIVE Compute23-ch01-01 , 3 10.0.6.2 50% ACTIVE Compute23-ch01-03 ,  Active
     PNOTEs: No...'
 
-
 - name: Extract device info
   vars:
     device_names: []
@@ -22,8 +21,8 @@
   loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
   when: "'ACTIVE' in item"
   set_fact:
-    device_names: "{{ device_names + [item | regex_search('(?<=ACTIVE )\\w+-\\w+-\\d+', ignorecase=True)] }}"
-    device_ips: "{{ device_ips + [item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True)] }}"
+    device_names: "{{ device_names + item | regex_findall('(?<=ACTIVE ).*?(?=, \\d+\\.\\d+\\.\\d+\\.\\d+)', ignorecase=True) }}"
+    device_ips: "{{ device_ips + item | regex_findall('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
 
 - name: Combine device names and IPs
   vars:
@@ -35,5 +34,6 @@
 - name: debug
   debug: 
     var: device_list
+
 
 
