@@ -16,14 +16,23 @@
 
 
 - name: Extract device info
-  set_fact:
-    device_list: "{{ device_list | default([]) + [{'name': name, 'ip': ip}] }}"
+  vars:
+    device_names: []
+    device_ips: []
   loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
   when: "'ACTIVE' in item"
-  vars:
-    name: "{{ item | regex_search('(?<=ACTIVE )\\w+-\\w+-\\d+', ignorecase=True) }}"
-    ip: "{{ item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
+  set_fact:
+    device_names: "{{ device_names + [item | regex_search('(?<=ACTIVE )\\w+-\\w+-\\d+', ignorecase=True)] }}"
+    device_ips: "{{ device_ips + [item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True)] }}"
 
+- name: Combine device names and IPs
+  set_fact:
+    device_list: "{{ [{'name': name, 'ip': ip}] | combine(device_list, recursive=True) }}"
+  vars:
+    device_list: []
+  loop: "{{ device_names | zip(device_ips) }}"
+  
 - name: debug
   debug: 
     var: device_list
+
