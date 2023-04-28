@@ -15,25 +15,16 @@
     PNOTEs: No...'
 
 - name: Extract device info
-  vars:
-    device_names: []
-    device_ips: []
-  loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
+  set_fact:
+    device_name: "{{ item | regex_search('(?<=ACTIVE ).*', ignorecase=True) | regex_replace(' \\d+.*', '') }}"
+    device_ip: "{{ item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
+  with_items: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
   when: "'ACTIVE' in item"
-  set_fact:
-    device_names: "{{ device_names + item | regex_findall('(?<=ACTIVE ).*?(?=, \\d+\\.\\d+\\.\\d+\\.\\d+)', ignorecase=True) }}"
-    device_ips: "{{ device_ips + item | regex_findall('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
-
-- name: Combine device names and IPs
-  vars:
-    device_list: []
-  loop: "{{ device_names | zip(device_ips) }}"
-  set_fact:
-    device_list: "{{ device_list + [{'name': item.0, 'ip': item.1}] }}"
 
 - name: debug
   debug: 
-    var: device_list
+    msg: "device_name: {{ device_name }} device_ip: {{ device_ip }}"
+
 
 
 
