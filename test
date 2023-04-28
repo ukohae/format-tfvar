@@ -13,3 +13,17 @@
 'Cluster Mode: HA Over LS,  ID Unique Address Assigned Load State Name ,  1 (local)
     10.0.12.5 50% ACTIVE Compute23-ch01-01 , 3 10.0.6.2 50% ACTIVE Compute23-ch01-03 ,  Active
     PNOTEs: No...'
+
+
+- name: Extract device info
+  set_fact:
+    device_list: "{{ device_list | default([]) + [{'name': name, 'ip': ip}] }}"
+  loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
+  when: "'ACTIVE' in item"
+  vars:
+    name: "{{ item | regex_search('(?<=ACTIVE )\\w+-\\w+-\\d+', ignorecase=True) }}"
+    ip: "{{ item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
+
+- name: debug
+  debug: 
+    var: device_list
