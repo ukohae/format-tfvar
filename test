@@ -20,10 +20,17 @@
     device_ip: "{{ item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
   with_items: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
   when: "'ACTIVE' in item"
+  register: device_info
+
+- name: Create device list
+  set_fact:
+    device_list: "{{ device_list | default([]) + [{'name': item.device_name, 'ip': item.device_ip}] }}"
+  loop: "{{ device_info.results }}"
 
 - name: debug
   debug: 
-    msg: "device_name: {{ device_name }} device_ip: {{ device_ip }}"
+    var: device_list
+
 
 
 
