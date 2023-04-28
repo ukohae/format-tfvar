@@ -26,13 +26,14 @@
     device_ips: "{{ device_ips + [item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True)] }}"
 
 - name: Combine device names and IPs
-  set_fact:
-    device_list: "{{ [{'name': name, 'ip': ip}] | combine(device_list, recursive=True) }}"
   vars:
     device_list: []
   loop: "{{ device_names | zip(device_ips) }}"
-  
+  set_fact:
+    device_list: "{{ device_list + [{'name': item.0, 'ip': item.1}] }}"
+
 - name: debug
   debug: 
     var: device_list
+
 
