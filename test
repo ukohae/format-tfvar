@@ -1,0 +1,15 @@
+  - name: Extract device info
+    set_fact:
+      device_name: "{{ item | regex_search('(?<=ACTIVE )\\w+-\\w+-\\d+', ignorecase=True) }}"
+      device_ip: "{{ item | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+', ignorecase=True) }}"
+    with_items: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split('\n') }}"
+    when: "'ACTIVE' in item"
+
+  - name: debug
+    debug: 
+      msg: "device_name: {{ device_name }} device_ip: {{ device_ip }}"
+
+
+'Cluster Mode: HA Over LS,  ID Unique Address Assigned Load State Name ,  1 (local)
+    10.0.12.5 50% ACTIVE Compute23-ch01-01 , 3 10.0.6.2 50% ACTIVE Compute23-ch01-03 ,  Active
+    PNOTEs: No...'
