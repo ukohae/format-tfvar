@@ -1,0 +1,30 @@
+- name: Send email for devices with ACTIVE status
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    statusDescription: "Cluster Mode: HA Over LS, ID Unique Address Assigned Load State Name , 
+                        1 (local) 10.0.12.5 50% ACTIVE Compute23-ch01-01 , 
+                        3 10.0.6.2 50% ACTIVE Compute23-ch01-03 ,
+                        2 10.0.6.3 50% ACTIVE Compute23-ch01-02 ,
+                        6 10.0.6.6 50% ACTIVE Compute23-ch01-04 ,
+                        7 10.0.5.7 50% DOWN Compute23-ch01-05 ,
+                        10 10.0.6.9 50% LOST Terry-g ,
+                        Active PNOTEs: No..."
+
+  tasks:
+    - name: Extract device information
+      set_fact:
+        active_devices: "{{ active_devices|default([]) + [ { 'hostname': hostname, 'ip': ip }] }}"
+      loop: "{{ statusDescription.split(',') }}"
+      when: "'ACTIVE' in item"
+      vars:
+        ip: "{{ item | regex_search('(\\d+\\.\\d+\\.\\d+\\.\\d+)', '\\1') }}"
+        hostname: "{{ item | regex_search('.*ACTIVE\\s+(\\S+)', '\\1') }}"
+
+    - debug:
+        var: active_devices
+
+    - name: Display active devices
+      debug:
+        msg: "{{ active_devices | map(attribute='hostname') | zip(active_devices | map(attribute='ip')) | map('join', ':') | join(', ') | replace('[','') | replace(']','') }}"
