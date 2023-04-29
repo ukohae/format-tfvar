@@ -1,0 +1,8 @@
+    - name: Extract device information
+      set_fact:
+        active_devices: "{{ active_devices|default([]) + [ { 'hostname': hostname, 'ip': ip }] }}"
+      loop: "{{ statusDescription.split(',') }}"
+      when: "'DOWN' in item or 'INIT' in item or 'LOST' in item"
+      vars:
+        ip: "{{ item | regex_search('(\\d+\\.\\d+\\.\\d+\\.\\d+)', '\\1') }}"
+        hostname: "{{ item | regex_search('.*(DOWN|INIT|LOST|ACTIVE)\\s+(\\S+)', '\\2') }}"
