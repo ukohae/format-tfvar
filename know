@@ -1,0 +1,25 @@
+  - name: Extract device information
+    set_fact:
+      active_devices: "{{ active_devices|default([]) + [ { 'hostname': hostname, 'ip': ip }] }}"
+    loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split(',') }}"
+    when: "'ACTIVE' in item"
+    vars:
+      ip: "{{ item | regex_search('(\\d+\\.\\d+\\.\\d+\\.\\d+)', '\\1') }}"
+      hostname: "{{ item | regex_search('.*ACTIVE\\s+(\\S+)', '\\1') }}"
+                                                    
+  - name: Send email
+    mail:
+      host: smtpmail.email.com
+      port: 25
+      from: email@email.com
+      to: "{{ email_list }}"
+      subject: "{{ target_list | join(' ') }} is DOWN"
+      subtype: html
+      body: "<p style='font-size:17px;'>
+            <br />  Security blade {{ active_devices | map(attribute='hostname') | zip(active_devices | map(attribute='ip')) | map('join', ':') | join(', ') | replace('[','') | replace(']','') }} 
+            inside SGM is LOST or DOWN. Please check to verify the status of the firewall in {{ inventory_hostname.replace('_', ' ').title() }}.            
+            <br /> <br /> Sincerely, 
+            <br /> Firewall Automation Team <br /> </p>"
+    loop: "{{ result['ansible_facts']['checkpoint_tasks']['tasks'][0]['task-details'][0]['statusDescription'].split(',') }}"
+    when: "'ACTIVE' in item"
+    ignore_errors: yes
