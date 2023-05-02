@@ -1,0 +1,78 @@
+---
+- name: Run Health Check on a Device
+  serial: 1
+  hosts: "{{ domain }}"
+  connection: httpapi
+  gather_facts: False
+  vars_files:
+    - 'credentials/my_var.yml'
+    - 'credentials/login.yml'
+  vars:
+    domain: check_point
+          
+  tasks:
+  - name: run-script
+    check_point.mgmt.cp_mgmt_run_script:
+      script: 'cphaprob stat'
+      script_name: 'Check stat'
+      targets:
+        - Server26
+        - Test1
+        - Server1
+        - Server6
+      wait_for_task: true
+      wait_for_task_timeout: 300
+    register: device
+    delegate_to: Employee_Services
+
+  - name: Extract task-ids
+    set_fact:
+      task_ids: "{{ task_ids | default([]) + [item['task-id']] }}"
+    loop: "{{ device['run-script']['tasks'] }}"
+
+  - name: show
+    check_point.mgmt.cp_mgmt_show_task:
+      task_id: "{{ task_ids }}"
+      details_level: full
+    register: final
+
+  - name: Extract status descriptions
+    set_fact:
+      status_descriptions: "{{ status_descriptions | default([]) + [item['task-details'][0]['statusDescription']] }}"
+    loop: "{{ final['show-task']['tasks'] }}"
+
+  - name: Extract device information
+    set_fact:
+      active_devices: "{{ active_devices|default([]) + [ { 'hostname': hostname, 'ip': ip }] }}"
+    loop: "{{ status_descriptions }}"
+    when: "'DOWN' in item or 'INIT' in item or 'ACTIVE' in item"
+    vars:
+      ip: "{{ item | regex_search('(\\d+\\.\\d+\\.\\d+\\.\\d+)', '\\1') | join('') }}"
+      hostname: "{{ item | regex_search('.*(DOWN|INIT|LOST|ACTIVE)\\s+(\\S+)', '\\2') | join('') }}"
+
+  - name: copy-file-to-log
+    local_action:
+      module: copy
+      content: "{{ status_descriptions | to_nice_yaml}}"
+      dest: tmp/note.yml
+    changed_when: false
+
+
+
+
+
+
+Strictly and dynamically get the devicename:ip of assuming statusDescription contains the following
+
+- 'Cluster Mode: HA Over LS,  ID Unique Address State Name ,  1 (local) 192.0.2.1
+    ACTIVE Server26-ch01-01, 2 192.0.2.2 ACTIVE Server26-ch01-02, 3 192.0.2.3 ACTIVE
+    Server26-ch01-03,  A...'
+- 'Cluster Mode: HA Over LS,  ID Unique Address Assigned Load State Name ,  1 (local)
+    192.0.2.1 50% ACTIVE Test1-ch01-01 , 2 192.0.2.2 50% ACTIVE Test1-ch01-02 ,  Active
+    PNOTEs: No...'
+- 'Cluster Mode: High Availability (Active Up) with IGMP Membership,  ID Unique Address
+    Assigned Load State Name ,  1 10.0.125.9 100% ACTIVE server1 , 2 (local)
+    10.10.1...'
+- 'Cluster Mode: HA Over LS,  ID Unique Address State Name ,  1 (local) 192.0.2.1
+    ACTIVE Server6-ch01-01 , 2 192.0.2.2 ACTIVE Server6-ch01-02 , 3 192.0.2.3 ACTIVE Server6-ch01-03
+    , 4 192...'
